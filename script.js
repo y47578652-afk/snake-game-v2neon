@@ -56,26 +56,45 @@ function showScreen(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   $(id).classList.add("active");
 }
+function setOverlayVisible(id, visible){
+  const el=$(id);
+  if(!el) return;
+  el.classList.toggle("hidden", !visible);
+  el.style.display=visible ? "grid" : "none";
+  el.setAttribute("aria-hidden", visible ? "false" : "true");
+}
+
+function hideGameOver(){ setOverlayVisible("gameOverOverlay", false); }
+function hidePause(){ setOverlayVisible("pauseOverlay", false); }
+
 function menu(){
   stopLoop();
   state=STATES.MENU;
+  hideGameOver();
+  hidePause();
   showScreen("menuScreen");
-  $("gameOverOverlay").classList.add("hidden");
-  $("pauseOverlay").classList.add("hidden");
   closePanel();
   updateMenu();
 }
 function startGame(selectedMode="classic"){
-  mode=selectedMode; state=STATES.PLAYING; showScreen("gameScreen"); closePanel();
-  // Always clear both overlays when starting a fresh round.
-  $("gameOverOverlay").classList.add("hidden");
-  $("pauseOverlay").classList.add("hidden");
+  // Stop any previous animation and force both overlays closed before a new round.
+  stopLoop();
+  hideGameOver();
+  hidePause();
+  mode=selectedMode;
+  state=STATES.PLAYING;
+  showScreen("gameScreen");
+  closePanel();
+
   score=0;level=1;combo=1;comboTimer=0;runCoins=0;runXP=0;queue=[];particles=[];powerUps=[];replay=[];
   direction={x:1,y:0}; obstacles=[]; timeLeft=mode==="time" ? 90 : 99999; runStart=performance.now();
   const c=Math.floor(GRID/2); snake=[{x:c,y:c},{x:c-1,y:c},{x:c-2,y:c},{x:c-3,y:c}];
   spawnFood();
   if(mode==="challenge" || mode==="hardcore") createObstacles(mode==="hardcore"?18:8);
-  lastStep=performance.now(); startLoop(); updateHud(); sfx("start");
+  lastStep=performance.now();
+  startLoop();
+  updateHud();
+  sfx("start");
 }
 function startDaily(){ startGame(["classic","classic","classic","noWalls"][daily.type]); dailyRun=true; }
 let dailyRun=false;
@@ -147,11 +166,11 @@ function endGame(reason){
   if(dailyRun && !save.dailyDone){ if(daily.type<3 ? score>=30*(daily.type+1) : mode==="noWalls"&&score>=250){save.dailyDone=true;save.coins+=daily.reward;showToast("DAILY COMPLETE!");} }
   save.leaderboard.push({score,mode,date:new Date().toLocaleDateString()});save.leaderboard.sort((a,b)=>b.score-a.score);save.leaderboard=save.leaderboard.slice(0,10);
   persist(); $("gameOverText").textContent=`${reason} • Score ${score} • +${runCoins} coins • +${runXP} XP`;
-  $("gameOverOverlay").classList.remove("hidden");$("pauseOverlay").classList.add("hidden");sfx("gameover");
+  setOverlayVisible("gameOverOverlay", true);hidePause();sfx("gameover");
 }
 function togglePause(){
-  if(state===STATES.PLAYING){state=STATES.PAUSED;$("pauseOverlay").classList.remove("hidden");stopLoop();}
-  else if(state===STATES.PAUSED){state=STATES.PLAYING;$("pauseOverlay").classList.add("hidden");lastStep=performance.now();startLoop();}
+  if(state===STATES.PLAYING){state=STATES.PAUSED;setOverlayVisible("pauseOverlay", true);stopLoop();}
+  else if(state===STATES.PAUSED){state=STATES.PLAYING;hidePause();lastStep=performance.now();startLoop();}
 }
 function queueDirection(d){
   if(state!==STATES.PLAYING) return;
@@ -273,7 +292,7 @@ $("startBtn").onclick=()=>startGame("classic");
 $("dailyBtn").onclick=()=>showScreen("dailyScreen");
 $("dailyStartBtn").onclick=()=>startDaily();
 $("pauseBtn").onclick=togglePause;$("resumeBtn").onclick=togglePause;
-$("restartBtn").onclick=()=>{dailyRun=false;$("gameOverOverlay").classList.add("hidden");startGame(mode)};
+$("restartBtn").onclick=(e)=>{e.preventDefault();e.stopPropagation();dailyRun=false;startGame(mode);};
 $("menuBtn").onclick=menu;$("brandButton").onclick=menu;$("closePanel").onclick=closePanel;$("panelBackdrop").onclick=closePanel;
 $("settingsBtn").onclick=()=>openPanel("settingsPanel");
 $("muteBtn").onclick=()=>{save.muted=!save.muted;persist();$("muteBtn").textContent=save.muted?"🔇":"🔊";};
