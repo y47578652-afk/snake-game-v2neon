@@ -56,9 +56,20 @@ function showScreen(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   $(id).classList.add("active");
 }
-function menu(){ stopLoop(); state=STATES.MENU; showScreen("menuScreen"); closePanel(); updateMenu(); }
+function menu(){
+  stopLoop();
+  state=STATES.MENU;
+  showScreen("menuScreen");
+  $("gameOverOverlay").classList.add("hidden");
+  $("pauseOverlay").classList.add("hidden");
+  closePanel();
+  updateMenu();
+}
 function startGame(selectedMode="classic"){
   mode=selectedMode; state=STATES.PLAYING; showScreen("gameScreen"); closePanel();
+  // Always clear both overlays when starting a fresh round.
+  $("gameOverOverlay").classList.add("hidden");
+  $("pauseOverlay").classList.add("hidden");
   score=0;level=1;combo=1;comboTimer=0;runCoins=0;runXP=0;queue=[];particles=[];powerUps=[];replay=[];
   direction={x:1,y:0}; obstacles=[]; timeLeft=mode==="time" ? 90 : 99999; runStart=performance.now();
   const c=Math.floor(GRID/2); snake=[{x:c,y:c},{x:c-1,y:c},{x:c-2,y:c},{x:c-3,y:c}];
@@ -262,7 +273,7 @@ $("startBtn").onclick=()=>startGame("classic");
 $("dailyBtn").onclick=()=>showScreen("dailyScreen");
 $("dailyStartBtn").onclick=()=>startDaily();
 $("pauseBtn").onclick=togglePause;$("resumeBtn").onclick=togglePause;
-$("restartBtn").onclick=()=>{dailyRun=false;startGame(mode)};
+$("restartBtn").onclick=()=>{dailyRun=false;$("gameOverOverlay").classList.add("hidden");startGame(mode)};
 $("menuBtn").onclick=menu;$("brandButton").onclick=menu;$("closePanel").onclick=closePanel;$("panelBackdrop").onclick=closePanel;
 $("settingsBtn").onclick=()=>openPanel("settingsPanel");
 $("muteBtn").onclick=()=>{save.muted=!save.muted;persist();$("muteBtn").textContent=save.muted?"🔇":"🔊";};
